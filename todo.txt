@@ -1,41 +1,88 @@
 LAZYSUNDAY — DEPLOYMENT CHECKLIST
 ==================================
 
-STEP 1 — Install and start the app with PM2
---------------------------------------------
-  cd /path/to/lazysunday
-  npm install
-  npm install -g pm2
-  pm2 start server.js --name lazysunday
-  pm2 save
-  pm2 startup   (run the printed command to auto-start on reboot)
+STEP 1 — Copy project to server and build the Docker image
+----------------------------------------------------------
+  Copy the project folder to your server, then:
 
-  Verify:
-    pm2 status
-    curl http://localhost:3000/api/config
+    cd /path/to/lazysunday
+    docker compose up -d --build
+
+  On first run the container automatically seeds /lazysunday/config.json
+  from the baked-in default if it doesn't exist yet.
+
+  Verify container is running:
+    docker compose ps
+    docker compose logs -f
+    curl http://localhost:3010/api/config
 
 
-STEP 2 — Create a Proxy Host in Nginx Proxy Manager
+STEP 2 — Host folder structure on your server
+----------------------------------------------
+  The following folders are mounted as Docker volumes:
+
+    /lazysunday/
+    ├── config.json       ← auto-created on first run, edit to customise
+    ├── backgrounds/      ← drop background images here (jpg/png/webp etc.)
+    └── covers/           ← drop album art here (filename must match track name)
+
+    /mnt/dragon_hoard/Music/   ← your music library (read-only mount)
+
+  Changes to config.json are picked up live — no restart needed.
+  New background images appear on next browser page load.
+
+
+STEP 3 — config.json quick reference
+--------------------------------------
+  Key settings to change after first run:
+
+    "siteTitle"   — the large heading shown on the page (Hindi or any text)
+
+    "music.type"  — "local" (default) or "youtube"
+    "music.local.path" — path to your music folder (already set to
+                         /mnt/dragon_hoard/Music)
+    "music.youtube.playlistUrl" — paste a YouTube playlist URL here
+                                  (requires yt-dlp on the host)
+
+    "backgrounds.intervalSeconds" — how long each background image shows
+    "backgrounds.images"          — leave as [] to auto-scan the
+                                    backgrounds/ folder, or list specific
+                                    filenames/URLs to control order
+
+
+STEP 4 — Create a Proxy Host in Nginx Proxy Manager
 ----------------------------------------------------
-  Domain Names        : music.yourdomain.com
-  Scheme              : http
-  Forward Hostname/IP : localhost (or 127.0.0.1)
-  Forward Port        : 3000
-  Cache Assets        : OFF
-  Block Common Exploits: ON
-  Websockets Support  : OFF
+  Two options depending on your setup:
+
+  OPTION A — NPM on same Docker network (recommended, no exposed port):
+    1. Find your NPM network name:
+         docker network ls
+    2. In docker-compose.yml uncomment the networks block and set the name
+    3. Comment out the ports block
+    4. Rebuild: docker compose up -d --build
+    5. In NPM: Forward Hostname = lazysunday, Port = 3010
+
+  OPTION B — Expose port (simpler):
+    Keep ports: "3010:3010" in docker-compose.yml
+    In NPM: Forward Hostname = your server IP, Port = 3010
+
+  NPM proxy host settings:
+    Domain Names         : music.yourdomain.com
+    Scheme               : http
+    Cache Assets         : OFF
+    Block Common Exploits: ON
+    Websockets Support   : OFF
 
   Enable SSL on the SSL tab — let NPM issue a Let's Encrypt cert.
 
 
-STEP 3 — Advanced tab in NPM (required for audio streaming)
-------------------------------------------------------------
-  Paste the following into the Advanced tab of your Proxy Host.
-  Without this, NPM buffering will break audio seeking.
+STEP 5 — Advanced tab in NPM (required — paste exactly as-is)
+--------------------------------------------------------------
+  Without this, NPM buffering breaks audio seeking and the online counter.
 
   ---
   location /audio/ {
-      proxy_pass http://localhost:3000;
+      proxy_pass http://lazysunday:3010;
       proxy_buffering        off;
       proxy_read_timeout     3600s;
       proxy_send_timeout     3600s;
@@ -44,9 +91,8 @@ STEP 3 — Advanced tab in NPM (required for audio streaming)
       proxy_set_header       Connection "";
   }
 
-  # SSE (online counter) — must not be buffered
   location /api/online/stream {
-      proxy_pass http://localhost:3000;
+      proxy_pass http://lazysunday:3010;
       proxy_buffering        off;
       proxy_cache            off;
       proxy_read_timeout     3600s;
@@ -56,7 +102,7 @@ STEP 3 — Advanced tab in NPM (required for audio streaming)
   }
 
   location / {
-      proxy_pass http://localhost:3000;
+      proxy_pass http://lazysunday:3010;
       proxy_http_version     1.1;
       proxy_set_header       Host              $host;
       proxy_set_header       X-Real-IP         $remote_addr;
@@ -65,29 +111,35 @@ STEP 3 — Advanced tab in NPM (required for audio streaming)
   }
   ---
 
-
-STEP 4 — Trust proxy (already in server.js, nothing to do)
------------------------------------------------------------
-  app.set('trust proxy', 1) is already set in server.js.
-  Express will correctly read X-Forwarded-For from NPM.
+  Note: if using Option B (exposed port), replace lazysunday:3010
+  with your-server-ip:3010 in all three proxy_pass lines above.
 
 
 FINAL CHECKLIST
 ---------------
-  [ ] pm2 status shows lazysunday as "online"
+  [ ] docker compose ps shows lazysunday as "Up"
+  [ ] /lazysunday/config.json exists on the host
+  [ ] /lazysunday/backgrounds/ has at least one image
   [ ] NPM proxy host created, SSL cert issued
-  [ ] Advanced tab snippet saved
-  [ ] /mnt/dragon_hoard/Music is accessible by the user pm2 runs as
-  [ ] backgrounds/ folder has at least one image
+  [ ] NPM Advanced tab snippet saved
   [ ] curl https://music.yourdomain.com/api/playlist returns tracks
+  [ ] curl https://music.yourdomain.com/api/config returns siteTitle
 
 
-PERMISSIONS GOTCHA
-------------------
-  If pm2 runs as a different user than who owns /mnt/dragon_hoard/Music,
-  the playlist will return a permissions error. Check with:
+USEFUL COMMANDS
+---------------
+  Start / stop:
+    docker compose up -d --build
+    docker compose down
 
-    pm2 show lazysunday | grep "exec mode\|user"
-    ls -la /mnt/dragon_hoard/Music
+  View logs:
+    docker compose logs -f
 
-  Fix: either chown the directory or start pm2 as the correct user.
+  Rebuild after code change:
+    docker compose up -d --build
+
+  Debug backgrounds not showing:
+    curl http://localhost:3010/api/debug/backgrounds
+
+  Open a shell inside the container:
+    docker exec -it lazysunday sh

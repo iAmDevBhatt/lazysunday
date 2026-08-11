@@ -37,10 +37,10 @@ RUN mkdir -p backgrounds covers
 RUN addgroup -S lazysunday && adduser -S lazysunday -G lazysunday
 USER lazysunday
 
-EXPOSE 3000
+EXPOSE 3010
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -qO- http://localhost:3000/api/config || exit 1
+  CMD wget -qO- http://localhost:3010/api/config || exit 1
 
 ENTRYPOINT ["/sbin/tini", "--", "/app/entrypoint.sh"]
 CMD ["node", "server.js"]

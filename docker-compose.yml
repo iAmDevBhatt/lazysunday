@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "3000:3000"       # remove this line if using Nginx Proxy Manager
+      - "3010:3010"       # remove this line if using Nginx Proxy Manager
                           # on the same Docker network (see below)
 
     volumes:
@@ -21,17 +21,17 @@ services:
 
     environment:
       - NODE_ENV=production
-      - PORT=3000
+      - PORT=3010
 
     # ── Nginx Proxy Manager network ─────────────────────────────
     # If NPM is running in Docker, add it to the same network so
-    # you can proxy by container name (lazysunday:3000) instead of
+    # you can proxy by container name (lazysunday:3010) instead of
     # exposing the port above. Steps:
     #
     #   1. Uncomment the networks block below
     #   2. Replace "npm_network" with your actual NPM network name
     #      (run: docker network ls)
-    #   3. In NPM, set Forward Hostname = lazysunday, Port = 3000
+    #   3. In NPM, set Forward Hostname = lazysunday, Port = 3010
     #   4. Comment out the ports block above
     #
     # networks:
