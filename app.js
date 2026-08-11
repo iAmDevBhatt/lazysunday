@@ -48,6 +48,12 @@ async function init() {
     const cfgData = await cfgRes.json();
     const plData  = await plRes.json();
 
+    // Always apply title and backgrounds — independent of whether tracks exist
+    const title = cfgData.siteTitle || 'LazySunday';
+    if (heroTitle) heroTitle.textContent = title;
+    document.title = title;
+    initBackgrounds(cfgData.backgrounds);
+
     PLAYLIST = plData.tracks ?? [];
 
     if (PLAYLIST.length === 0) {
@@ -56,11 +62,6 @@ async function init() {
       return;
     }
 
-    const title = cfgData.siteTitle || 'LazySunday';
-    if (heroTitle) heroTitle.textContent = title;
-    document.title = title;
-
-    initBackgrounds(cfgData.backgrounds);
     loadTrack(0, false);
   } catch (err) {
     console.error('Init failed:', err);
@@ -71,7 +72,8 @@ async function init() {
 
 // ── Background rotation ───────────────────────────────────────
 function initBackgrounds({ images = [], intervalSeconds = 15 } = {}) {
-  if (images.length === 0) return;
+  console.log('[backgrounds] received', images.length, 'images:', images);
+  if (images.length === 0) { console.warn('[backgrounds] no images — check /api/debug/backgrounds'); return; }
 
   let activeBg  = bgA;    // the layer currently visible
   let standbyBg = bgB;    // the layer being prepared

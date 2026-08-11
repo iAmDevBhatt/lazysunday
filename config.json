@@ -19,11 +19,9 @@
   },
 
   "backgrounds": {
-    "_comment": "List image filenames from the /backgrounds/ folder, OR full URLs. Set intervalSeconds for how long each image shows.",
+    "_comment": "Leave 'images' empty ([]) to auto-scan the backgrounds/ folder. Or list specific filenames/URLs to override.",
     "intervalSeconds": 15,
-    "images": [
-      "theme-bg.jpg"
-    ]
+    "images": []
   },
 
   "server": {

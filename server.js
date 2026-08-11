@@ -109,15 +109,61 @@ app.get('/api/online/stream', (req, res) => {
 });
 
 // ── API: config snapshot for the frontend ─────────────────────
+const BG_IMAGE_EXTS = new Set(['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif']);
+
+function resolveBackgroundImages() {
+  const cfgImages = cfg.backgrounds?.images;
+
+  // If config lists explicit images (non-empty array), use those
+  if (Array.isArray(cfgImages) && cfgImages.length > 0) {
+    console.log('[backgrounds] using config list:', cfgImages);
+    return cfgImages.map(img =>
+      /^https?:\/\//i.test(img) ? img : `/backgrounds/${img}`
+    );
+  }
+
+  // Otherwise auto-scan the backgrounds/ folder
+  try {
+    const all   = fs.readdirSync(BG_DIR);
+    const imgs  = all.filter(f => BG_IMAGE_EXTS.has(path.extname(f).toLowerCase())).sort();
+    console.log(`[backgrounds] scanned ${BG_DIR} — found:`, imgs.length ? imgs : '(none)');
+    return imgs.map(f => `/backgrounds/${f}`);
+  } catch (err) {
+    console.error('[backgrounds] cannot read folder:', BG_DIR, '—', err.message);
+    return [];
+  }
+}
+
+// Debug endpoint — remove once backgrounds are working
+app.get('/api/debug/backgrounds', (req, res) => {
+  let dirExists = false;
+  let files     = [];
+  let error     = null;
+
+  try {
+    files     = fs.readdirSync(BG_DIR);
+    dirExists = true;
+  } catch (err) {
+    error = err.message;
+  }
+
+  res.json({
+    bgDir:      BG_DIR,
+    dirExists,
+    allFiles:   files,
+    imageFiles: files.filter(f => BG_IMAGE_EXTS.has(path.extname(f).toLowerCase())),
+    resolved:   resolveBackgroundImages(),
+    error,
+  });
+});
+
 // Exposes only what the client needs — never the full config.
 app.get('/api/config', (req, res) => {
   res.json({
     siteTitle: cfg.siteTitle || 'LazySunday',
     backgrounds: {
       intervalSeconds: cfg.backgrounds?.intervalSeconds ?? 15,
-      images: (cfg.backgrounds?.images ?? []).map(img => {
-        return /^https?:\/\//i.test(img) ? img : `/backgrounds/${img}`;
-      }),
+      images: resolveBackgroundImages(),
     },
   });
 });
