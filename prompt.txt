@@ -1,0 +1,21 @@
+Act as a Senior Full-Stack Web Developer. Generate the complete source code (HTML, CSS, JavaScript, and Node.js backend) for a responsive, single-page web audio player matching a specific visual theme.
+
+1. Visual Theme & Layout Requirements:
+- Theme Inspiration: "Deelux Saloon" / retro Indian aesthetic with a vibrant full-screen background image (`theme-bg.jpg`).
+- Top Bar: Display current time (top-left), an active status pill (e.g., "51 online" with a green dot indicator), and top-right navigation links to external platforms like Spotify and YT Music.
+- Hero Section: Bold, large centered Hindi/Devanagari title typography (e.g., "डीलक्स सलून") using fluid typography that scales automatically across screen sizes.
+- Player Layout: A bottom-centered floating glassmorphism audio player bar (blurred semi-transparent dark-red background with light border). Include circular album art, track title, artist name, progress bar, time timestamps, and audio controls.
+
+2. Audio Player Functionality (Client-Side JavaScript):
+- Native HTML5 `<audio>` player logic.
+- Controls: Play/Pause toggle (swapping icons), Next Song, and Previous Song buttons.
+- Interactive progress bar with click-to-seek/scrubbing functionality.
+- Automatic playlist looping and auto-advancing to the next song when the current track finishes.
+- Fully responsive design using Flexbox/CSS Grid that adapts seamlessly to desktop, tablet, and mobile screens.
+
+3. Backend & Scalability Requirements:
+- Server: Node.js with Express.js to host static assets and stream audio files from a local directory.
+- Capacity: Optimized to handle at least 100 concurrent streams efficiently using static file streaming.
+- Structure: Provide clear folder hierarchy and installation commands.
+
+Please output complete, production-ready code split into distinct files: index.html, style.css, app.js, and server.js.
