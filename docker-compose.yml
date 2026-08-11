@@ -1,0 +1,43 @@
+services:
+  lazysunday:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lazysunday
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"       # remove this line if using Nginx Proxy Manager
+                          # on the same Docker network (see below)
+
+    volumes:
+      # Music library — read-only so the app can never modify your files
+      - /mnt/dragon_hoard/Music:/mnt/dragon_hoard/Music:ro
+
+      # All app data lives under /lazysunday/ on the host
+      - /lazysunday/backgrounds:/app/backgrounds
+      - /lazysunday/covers:/app/covers
+      - /lazysunday/config.json:/app/config.json
+
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+
+    # ── Nginx Proxy Manager network ─────────────────────────────
+    # If NPM is running in Docker, add it to the same network so
+    # you can proxy by container name (lazysunday:3000) instead of
+    # exposing the port above. Steps:
+    #
+    #   1. Uncomment the networks block below
+    #   2. Replace "npm_network" with your actual NPM network name
+    #      (run: docker network ls)
+    #   3. In NPM, set Forward Hostname = lazysunday, Port = 3000
+    #   4. Comment out the ports block above
+    #
+    # networks:
+    #   - npm_network
+
+# networks:
+#   npm_network:
+#     external: true
+#     name: npm_network       # ← replace with your actual network name
