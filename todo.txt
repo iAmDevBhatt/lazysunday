@@ -1,0 +1,93 @@
+LAZYSUNDAY — DEPLOYMENT CHECKLIST
+==================================
+
+STEP 1 — Install and start the app with PM2
+--------------------------------------------
+  cd /path/to/lazysunday
+  npm install
+  npm install -g pm2
+  pm2 start server.js --name lazysunday
+  pm2 save
+  pm2 startup   (run the printed command to auto-start on reboot)
+
+  Verify:
+    pm2 status
+    curl http://localhost:3000/api/config
+
+
+STEP 2 — Create a Proxy Host in Nginx Proxy Manager
+----------------------------------------------------
+  Domain Names        : music.yourdomain.com
+  Scheme              : http
+  Forward Hostname/IP : localhost (or 127.0.0.1)
+  Forward Port        : 3000
+  Cache Assets        : OFF
+  Block Common Exploits: ON
+  Websockets Support  : OFF
+
+  Enable SSL on the SSL tab — let NPM issue a Let's Encrypt cert.
+
+
+STEP 3 — Advanced tab in NPM (required for audio streaming)
+------------------------------------------------------------
+  Paste the following into the Advanced tab of your Proxy Host.
+  Without this, NPM buffering will break audio seeking.
+
+  ---
+  location /audio/ {
+      proxy_pass http://localhost:3000;
+      proxy_buffering        off;
+      proxy_read_timeout     3600s;
+      proxy_send_timeout     3600s;
+      proxy_connect_timeout  10s;
+      proxy_http_version     1.1;
+      proxy_set_header       Connection "";
+  }
+
+  # SSE (online counter) — must not be buffered
+  location /api/online/stream {
+      proxy_pass http://localhost:3000;
+      proxy_buffering        off;
+      proxy_cache            off;
+      proxy_read_timeout     3600s;
+      proxy_http_version     1.1;
+      proxy_set_header       Connection "";
+      proxy_set_header       X-Accel-Buffering no;
+  }
+
+  location / {
+      proxy_pass http://localhost:3000;
+      proxy_http_version     1.1;
+      proxy_set_header       Host              $host;
+      proxy_set_header       X-Real-IP         $remote_addr;
+      proxy_set_header       X-Forwarded-For   $proxy_add_x_forwarded_for;
+      proxy_set_header       X-Forwarded-Proto $scheme;
+  }
+  ---
+
+
+STEP 4 — Trust proxy (already in server.js, nothing to do)
+-----------------------------------------------------------
+  app.set('trust proxy', 1) is already set in server.js.
+  Express will correctly read X-Forwarded-For from NPM.
+
+
+FINAL CHECKLIST
+---------------
+  [ ] pm2 status shows lazysunday as "online"
+  [ ] NPM proxy host created, SSL cert issued
+  [ ] Advanced tab snippet saved
+  [ ] /mnt/dragon_hoard/Music is accessible by the user pm2 runs as
+  [ ] backgrounds/ folder has at least one image
+  [ ] curl https://music.yourdomain.com/api/playlist returns tracks
+
+
+PERMISSIONS GOTCHA
+------------------
+  If pm2 runs as a different user than who owns /mnt/dragon_hoard/Music,
+  the playlist will return a permissions error. Check with:
+
+    pm2 show lazysunday | grep "exec mode\|user"
+    ls -la /mnt/dragon_hoard/Music
+
+  Fix: either chown the directory or start pm2 as the correct user.

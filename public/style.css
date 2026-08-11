@@ -1,0 +1,522 @@
+/* ============================================================
+   Design tokens
+   ============================================================ */
+:root {
+  /* Colors */
+  --clr-bg-overlay: rgba(10, 0, 0, 0.55);
+  --clr-glass-bg: rgba(60, 0, 10, 0.58);
+  --clr-glass-border: rgba(255, 200, 180, 0.18);
+  --clr-accent: #ff6b35;
+  --clr-accent-2: #ffb347;
+  --clr-text-primary: #fff5ee;
+  --clr-text-muted: rgba(255, 245, 238, 0.6);
+  --clr-progress-track: rgba(255, 245, 238, 0.2);
+  --clr-progress-fill: #ff6b35;
+  --clr-status-dot: #4ade80;
+
+  /* Spacing */
+  --sp-xs: 0.25rem;
+  --sp-sm: 0.5rem;
+  --sp-md: 1rem;
+  --sp-lg: 1.5rem;
+  --sp-xl: 2rem;
+
+  /* Radii */
+  --radius-pill: 999px;
+  --radius-lg: 1.25rem;
+  --radius-sm: 0.5rem;
+
+  /* Typography — fluid scale */
+  --fs-hero: clamp(2.8rem, 9vw + 1rem, 8rem);
+  --fs-subtitle: clamp(0.85rem, 1.5vw + 0.4rem, 1.2rem);
+  --fs-track: clamp(0.85rem, 1.5vw + 0.3rem, 1.05rem);
+  --fs-artist: clamp(0.75rem, 1.2vw + 0.2rem, 0.9rem);
+  --fs-ui: clamp(0.7rem, 1.2vw + 0.2rem, 0.88rem);
+
+  /* Player */
+  --player-art-size: clamp(52px, 8vw, 76px);
+  --player-blur: blur(18px);
+  --player-shadow: 0 8px 48px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0,0,0,0.3);
+
+  /* Transition */
+  --t-fast: 150ms ease;
+  --t-med: 280ms ease;
+}
+
+/* ============================================================
+   Reset & base
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  color: var(--clr-text-primary);
+  overflow-x: hidden;
+  position: relative;
+}
+
+img { max-width: 100%; display: block; }
+button { cursor: pointer; border: none; background: none; font: inherit; color: inherit; }
+a { color: inherit; text-decoration: none; }
+svg { display: block; }
+
+/* ============================================================
+   Background — two-layer crossfade
+   ============================================================ */
+
+/* Both layers sit stacked at z-index 0; JS swaps which one is
+   visible by toggling .bg--visible. The non-visible layer acts
+   as a staging area for the next image. */
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  /* Warm retro tint */
+  filter: saturate(1.15) sepia(0.18);
+  opacity: 0;
+  transition: opacity 1.8s ease-in-out;
+}
+
+.bg-layer.bg--visible {
+  opacity: 1;
+}
+
+.bg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--clr-bg-overlay);
+  /* Radial vignette */
+  background:
+    radial-gradient(ellipse 80% 80% at 50% 50%, transparent 30%, rgba(5, 0, 0, 0.7) 100%),
+    var(--clr-bg-overlay);
+}
+
+/* ============================================================
+   Top bar
+   ============================================================ */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  padding: var(--sp-sm) clamp(var(--sp-md), 4vw, var(--sp-xl));
+  /* Subtle frosted strip */
+  background: rgba(10, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 200, 180, 0.08);
+}
+
+.top-bar__time {
+  font-size: var(--fs-ui);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  color: var(--clr-text-muted);
+  min-width: 4ch;
+}
+
+.top-bar__status {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xs);
+  font-size: var(--fs-ui);
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--clr-status-dot);
+  box-shadow: 0 0 6px var(--clr-status-dot);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+.top-bar__links {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.ext-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-ui);
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(255, 200, 180, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  transition: background var(--t-fast), border-color var(--t-fast), transform var(--t-fast);
+}
+
+.ext-link:hover,
+.ext-link:focus-visible {
+  background: rgba(255, 107, 53, 0.22);
+  border-color: rgba(255, 107, 53, 0.5);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.ext-link__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   Hero
+   ============================================================ */
+.hero {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 5rem clamp(var(--sp-md), 6vw, 4rem) 160px;
+  pointer-events: none; /* let clicks pass through to background */
+}
+
+.hero__title {
+  font-family: 'Tiro Devanagari Hindi', serif;
+  font-size: var(--fs-hero);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  /* Warm gradient text */
+  background: linear-gradient(135deg, #fff5ee 0%, var(--clr-accent-2) 40%, var(--clr-accent) 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
+  /* Fallback for browsers without background-clip:text */
+  filter: drop-shadow(0 2px 24px rgba(255, 107, 53, 0.35));
+  animation: fadeSlideUp 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero__subtitle {
+  margin-top: var(--sp-md);
+  font-size: var(--fs-subtitle);
+  font-weight: 400;
+  color: var(--clr-text-muted);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: fadeSlideUp 0.9s 0.15s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   Player — floating glassmorphism bar
+   ============================================================ */
+.player {
+  position: fixed;
+  bottom: clamp(var(--sp-md), 3vh, var(--sp-xl));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: min(96vw, 860px);
+  animation: slideUp 0.7s 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(40px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.player__inner {
+  display: flex;
+  align-items: center;
+  gap: clamp(var(--sp-sm), 2vw, var(--sp-lg));
+  padding: clamp(10px, 2vw, 16px) clamp(var(--sp-md), 3vw, var(--sp-xl));
+  background: var(--clr-glass-bg);
+  backdrop-filter: var(--player-blur);
+  -webkit-backdrop-filter: var(--player-blur);
+  border: 1px solid var(--clr-glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--player-shadow);
+}
+
+/* ---- Album art ---- */
+.player__art-wrap {
+  flex-shrink: 0;
+  width: var(--player-art-size);
+  height: var(--player-art-size);
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 200, 180, 0.3);
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.12), 0 4px 16px rgba(0,0,0,0.4);
+  /* Spin while playing */
+  animation: none;
+}
+
+.player__art-wrap.is-playing {
+  animation: spin 18s linear infinite;
+}
+
+.player__art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---- Track info ---- */
+.player__info {
+  flex: 0 0 clamp(90px, 18vw, 160px);
+  width: clamp(90px, 18vw, 160px);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.player__track {
+  font-size: var(--fs-track);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--clr-text-primary);
+}
+
+.player__artist {
+  font-size: var(--fs-artist);
+  color: var(--clr-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* ---- Controls ---- */
+.player__controls {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.player__buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(var(--sp-sm), 2vw, var(--sp-lg));
+}
+
+.ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background var(--t-fast), transform var(--t-fast), opacity var(--t-fast);
+  color: var(--clr-text-primary);
+}
+
+.ctrl-btn svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ctrl-btn--prev,
+.ctrl-btn--next {
+  width: 36px;
+  height: 36px;
+  opacity: 0.8;
+}
+
+.ctrl-btn--prev:hover,
+.ctrl-btn--next:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.1);
+}
+
+.ctrl-btn--play {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--clr-accent), #c0392b);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.45);
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.ctrl-btn--play:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(255, 107, 53, 0.6);
+}
+
+.ctrl-btn--play:active { transform: scale(0.96); }
+
+.ctrl-btn--play svg {
+  width: 26px;
+  height: 26px;
+}
+
+.ctrl-btn:focus-visible {
+  outline: 2px solid var(--clr-accent);
+  outline-offset: 3px;
+}
+
+/* ---- Progress bar ---- */
+.player__progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.player__time {
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--clr-text-muted);
+  min-width: 3ch;
+  flex-shrink: 0;
+}
+
+.player__progress {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  background: var(--clr-progress-track);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  /* Expand hit area */
+  padding: 10px 0;
+  margin: -10px 0;
+}
+
+.player__progress::before {
+  content: '';
+  position: absolute;
+  inset: 10px 0;
+  border-radius: var(--radius-pill);
+  background: var(--clr-progress-track);
+}
+
+.player__progress-fill {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  height: 4px;
+  width: 0%;
+  background: linear-gradient(90deg, var(--clr-accent), var(--clr-accent-2));
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+  transition: width 0.1s linear;
+}
+
+.player__progress-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--clr-accent);
+  box-shadow: 0 0 6px rgba(255, 107, 53, 0.7);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-fast), transform var(--t-fast);
+}
+
+.player__progress:hover .player__progress-thumb,
+.player__progress:focus-visible .player__progress-thumb {
+  opacity: 1;
+}
+
+.player__progress:hover .player__progress-fill,
+.player__progress:focus-visible .player__progress-fill {
+  height: 5px;
+}
+
+/* ============================================================
+   Utilities
+   ============================================================ */
+.hidden { display: none !important; }
+
+/* ============================================================
+   Responsive breakpoints
+   ============================================================ */
+
+/* Tablet / narrow player */
+@media (max-width: 640px) {
+  .top-bar__time { display: none; }
+
+  .player__info {
+    max-width: 80px;
+  }
+
+  .ctrl-btn--play {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ext-link span { display: none; } /* icon-only on very small screens */
+  .ext-link { padding: 4px 8px; }
+}
+
+/* Mobile — stack info under art */
+@media (max-width: 420px) {
+  .player__inner {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--sp-sm);
+  }
+
+  .player__info {
+    max-width: 100%;
+    text-align: center;
+    order: 2;
+    flex-basis: 100%;
+  }
+
+  .player__controls {
+    order: 3;
+    flex-basis: 100%;
+  }
+
+  .player__art-wrap {
+    order: 1;
+  }
+}
+
+/* Large screens — wider player */
+@media (min-width: 1100px) {
+  .player {
+    width: min(88vw, 1000px);
+  }
+}

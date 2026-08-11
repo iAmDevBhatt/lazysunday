@@ -1,0 +1,32 @@
+{
+  "_comment": "Edit this file to configure music source and backgrounds. Restart server after changes.",
+
+  "siteTitle": "लेज़ी संडे",
+
+  "music": {
+    "_comment_source": "Set 'type' to 'local' or 'youtube'. Only the matching block is used.",
+    "type": "local",
+
+    "local": {
+      "path": "/mnt/dragon_hoard/Music"
+    },
+
+    "youtube": {
+      "playlistUrl": "",
+      "_comment": "Requires yt-dlp installed on PATH. Set type to 'youtube' above and paste your playlist URL here.",
+      "_example": "https://www.youtube.com/playlist?list=PLxxxxxxxxxxxxxxxx"
+    }
+  },
+
+  "backgrounds": {
+    "_comment": "List image filenames from the /backgrounds/ folder, OR full URLs. Set intervalSeconds for how long each image shows.",
+    "intervalSeconds": 15,
+    "images": [
+      "theme-bg.jpg"
+    ]
+  },
+
+  "server": {
+    "port": 3000
+  }
+}
