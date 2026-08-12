@@ -1,14 +1,10 @@
 #!/bin/sh
 set -e
 
-# Docker creates a directory at a bind-mount path when the host file doesn't
-# exist yet. Detect that and replace it with the baked-in default so the app
-# starts cleanly on first run.
-if [ -d /app/config.json ]; then
-  rmdir /app/config.json
-  cp /app/config.default.json /app/config.json
-  echo "[lazysunday] First run: seeded default config.json"
-  echo "[lazysunday] Edit /lazysunday/config.json on the host and restart to customise."
+# If config.json doesn't exist inside /app/config, seed it from default
+if [ ! -f /app/config/config.json ]; then
+  cp /app/config.default.json /app/config/config.json
+  echo "[lazysunday] First run: seeded config/config.json from default"
 fi
 
 exec "$@"
